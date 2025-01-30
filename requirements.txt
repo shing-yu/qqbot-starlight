@@ -1,0 +1,6 @@
+qq-botpy
+python-dotenv
+sqlalchemy
+apscheduler
+requests
+tomli

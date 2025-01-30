@@ -1,0 +1,6 @@
+.idea/
+.venv/
+*.log
+.env
+*.db
+static.toml
