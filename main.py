@@ -1,15 +1,7 @@
-import os
-from dotenv import load_dotenv
-
 import botpy
-from common import logger
+from common import logger, ID, SECRET
 from handlers import commands_handler, static_handler
 from botpy.message import GroupMessage, C2CMessage
-
-load_dotenv()
-
-ID = os.getenv("ID")
-SECRET = os.getenv("SECRET")
 
 
 class MyClient(botpy.Client):
@@ -42,11 +34,6 @@ class MyClient(botpy.Client):
 
 
 if __name__ == "__main__":
-    # 通过预设置的类型，设置需要监听的事件通道
-    # intents = botpy.Intents.none()
-    # intents.public_guild_messages=True
-
-    # 通过kwargs，设置需要监听的事件通道
     intents = botpy.Intents.all()
     client = MyClient(intents=intents)
     client.run(appid=ID, secret=SECRET)

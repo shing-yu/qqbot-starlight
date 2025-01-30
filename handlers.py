@@ -1,5 +1,6 @@
-from common import logger, get_hitokoto, statics
+from common import logger, statics, send_code, COOKIE
 from database import get_session, Users, CheckIn
+import requests
 
 db = get_session()
 
@@ -33,7 +34,8 @@ def commands_handler(openid: str, command: str, prefix: str = "\n") -> str:
                     "📅 /签到 \n每日签到，领取积分！🎁 一天不签到，心情都不好~(´；ω；`)💔\n"
                     "📝 /一言 \n随机获取一句富有哲理或有趣的句子！📜✨ 让智慧点亮你的一天！(๑•̀ㅂ•́)و✧\n"
                     "🎭 /设置昵称 <昵称> \n给自己取个响亮的名字吧！💡 你的新身份即将诞生~ (≧▽≦)🎉\n"
-                    "📖 /我的 \n查看你的个人信息、积分等等小秘密~ 📜✨ 一切尽在掌握！(๑>◡<๑)🔍\n")
+                    "📖 /我的 \n查看你的个人信息、积分等等小秘密~ 📜✨ 一切尽在掌握！(๑>◡<๑)🔍\n"
+                    "（不需要加上<>符号哦~）（使用 /帮助2 查看更多指令）")
         case "签到":
             row = db.query(CheckIn).filter_by(uid=user.uid).first()
             if row is not None:
@@ -69,6 +71,14 @@ def commands_handler(openid: str, command: str, prefix: str = "\n") -> str:
                     if row.nickname else f"{i+1}. {row.uid:08d} - {row.rewards}积分\n"
             text += "（仅限普通用户哦~）"
             return text
+        case "帮助2":
+            return (f"{prefix}更多帮助来啦！ 🌟(๑•̀ㅂ•́)و✧\n"
+                    "/兑换云盘 <邮箱> [机器人积分数] \n使用积分兑换星隅云盘积分，比例1:5，兑换码将发送至邮箱~📧✨\n（至少需要200积分）\n")
+        case "兑换云盘":
+            if len(args) < 1:
+                return "参数不足"
+            email = args[0]
+            return cloud_handler(user, email, args[1] if len(args) > 1 else None)
         case "op":
             # /op action uid args
             arrow_roles = ["admin", "root"]
@@ -114,3 +124,42 @@ def admin_handler(action: str, uid: int, args: list) -> str:
 def static_handler(content: str, prefix: str = "\n") -> str:
     if content in statics:
         return prefix + statics[content]
+
+
+def cloud_handler(user: Users, email: str, rewards: str) -> str:
+    if rewards:
+        try:
+            rewards = int(rewards)
+        except ValueError:
+            return "参数错误"
+    else:
+        rewards = user.rewards
+    if rewards < 200:
+        return "至少需要200积分"
+    if rewards > user.rewards:
+        return "积分不足"
+    score = rewards * 5
+    user.rewards = user.rewards - rewards
+    db.commit()
+    logger.info(f"用户{user.uid}尝试兑换{score}云盘积分，使用{rewards}积分")
+    response = requests.post("https://cloud.shingyu.cn/api/v3/admin/redeem",
+                             json={"id": 0, "num": 1, "time": score, "type": 2},
+                             headers={"Cookie": COOKIE})
+    if response.status_code != 200 or response.json()["code"] != 0:
+        user.rewards = user.rewards + rewards
+        db.commit()
+        return "兑换失败，请联系管理员，积分已返还"
+    name = user.nickname if user.nickname else f"{user.uid:08d}"
+    send_code(email, "您的云盘兑换码", response.json()["data"][0], name, str(score), str(rewards))
+    return "兑换成功，兑换码已发送至邮箱"
+
+
+def get_hitokoto() -> tuple:
+    """
+    获取一言
+    """
+    response = requests.get("https://v1.hitokoto.cn", timeout=4.5)
+    data = response.json()
+    hitokoto = data["hitokoto"]
+    from_ = data["from"] if data["from"] != "原创" else data["creator"]+"（原创）"
+    return hitokoto, from_
