@@ -1,11 +1,21 @@
-from common import logger, statics, send_code, COOKIE
+from common import logger, statics, send_code, COOKIE, MODE
 from database import get_session, Users, CheckIn
+from botpy.message import GroupMessage, C2CMessage
+import asyncio
 import requests
 
 db = get_session()
 
 
-def commands_handler(openid: str, command: str, prefix: str = "\n") -> str:
+def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMessage, prefix: str = "\n") -> str:
+    """
+    指令类消息处理器
+    :param openid: 从QQ消息中获取的用户openid
+    :param command: 指令内容
+    :param _message: 消息对象，用于部分指令中需多次/异步回复的情况
+    :param prefix: 消息前缀（群聊环境设置为'\n'可改善首行显示效果）
+    :return: 最后的回复消息
+    """
     # 预处理
     command = command[1:] if command.startswith("/") else command
     command = command.split(" ")
@@ -13,6 +23,9 @@ def commands_handler(openid: str, command: str, prefix: str = "\n") -> str:
     args = command[1:] if len(command) > 1 else []
 
     row = db.query(Users).filter_by(openid=openid).first()
+
+    if MODE == "DEBUG" and row.role != "root":
+        return "当前正在进行维护测试，请稍后再试~"
     if row is None:
         logger.info(f"未查询到用户：{openid[:4]}")
         db.add(Users(openid=openid))
@@ -73,12 +86,12 @@ def commands_handler(openid: str, command: str, prefix: str = "\n") -> str:
             return text
         case "帮助2":
             return (f"{prefix}更多帮助来啦！ 🌟(๑•̀ㅂ•́)و✧\n"
-                    "/兑换云盘 <邮箱> [机器人积分数] \n使用积分兑换星隅云盘积分，比例1:5，兑换码将发送至邮箱~📧✨\n（至少需要200积分）\n")
+                    "/兑换云盘 <邮箱> [机器人积分数] \n使用积分兑换星隅云盘积分，比例1:5，兑换码将发送至邮箱~📧✨\n（至少需要100积分）\n")
         case "兑换云盘":
             if len(args) < 1:
                 return "参数不足"
             email = args[0]
-            return cloud_handler(user, email, args[1] if len(args) > 1 else None)
+            return cloud_handler(user, email, args[1] if len(args) > 1 else None, _message)
         case "op":
             # /op action uid args
             arrow_roles = ["admin", "root"]
@@ -126,7 +139,15 @@ def static_handler(content: str, prefix: str = "\n") -> str:
         return prefix + statics[content]
 
 
-def cloud_handler(user: Users, email: str, rewards: str) -> str:
+def cloud_handler(user: Users, email: str, rewards: str, message: GroupMessage | C2CMessage) -> str:
+    """
+    云盘兑换处理
+    :param user: 用户对象
+    :param email: 用户提供的邮箱
+    :param rewards: 使用的积分【可选】
+    :param message: 消息对象，邮件发送过程较慢，需发送等待提示
+    :return: 最后兑换结果
+    """
     if rewards:
         try:
             rewards = int(rewards)
@@ -134,14 +155,15 @@ def cloud_handler(user: Users, email: str, rewards: str) -> str:
             return "参数错误"
     else:
         rewards = user.rewards
-    if rewards < 200:
-        return "至少需要200积分"
+    if rewards < 100:
+        return "至少需要100积分"
     if rewards > user.rewards:
         return "积分不足"
     score = rewards * 5
     user.rewards = user.rewards - rewards
     db.commit()
     logger.info(f"用户{user.uid}尝试兑换{score}云盘积分，使用{rewards}积分")
+    asyncio.create_task(message.reply(content="正在兑换，请稍候..."))
     response = requests.post("https://cloud.shingyu.cn/api/v3/admin/redeem",
                              json={"id": 0, "num": 1, "time": score, "type": 2},
                              headers={"Cookie": COOKIE})
@@ -150,8 +172,12 @@ def cloud_handler(user: Users, email: str, rewards: str) -> str:
         db.commit()
         return "兑换失败，请联系管理员，积分已返还"
     name = user.nickname if user.nickname else f"{user.uid:08d}"
-    send_code(email, "您的云盘兑换码", response.json()["data"][0], name, str(score), str(rewards))
-    return "兑换成功，兑换码已发送至邮箱"
+    if send_code(email, "您的云盘兑换码", response.json()["data"][0], name, str(score), str(rewards)):
+        return "兑换成功，兑换码已发送至邮箱"
+    else:
+        user.rewards = user.rewards + rewards
+        db.commit()
+        return "邮件发送失败，积分已返还"
 
 
 def get_hitokoto() -> tuple:
