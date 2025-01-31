@@ -65,7 +65,7 @@ async def commands_handler(openid: str, command: str, _message: GroupMessage | C
                 return "✨ 签到完成后才能解锁幸运抽奖，快去完成签到，再来摸鱼吧！🎉(•̀ᴗ•́)"
             elif row.fished:
                 return "🐟 看来你已经得到了今天的好运，明天再来碰碰运气吧！💫( ｡•̀ᴗ•́｡)"
-            await _message.reply(content="🐟 你摸到了...")
+            # await _message.reply(content="🐟 你摸到了...")
             prizes = [0, 99, 50, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20]
             probabilities = [13.5, 0.81, 1.62, 23, 26, 27, 20, 42, 22, 19, 16, 12, 7, 7, 7, 7, 7, 7, 6]
             prize = random.choices(prizes, probabilities)[0]
@@ -171,13 +171,13 @@ def static_handler(content: str, prefix: str = "\n") -> str:
         return prefix + statics[content]
 
 
-def cloud_handler(user: Users, email: str, rewards: str, message: GroupMessage | C2CMessage) -> str:
+def cloud_handler(user: Users, email: str, rewards: str, _message: GroupMessage | C2CMessage) -> str:
     """
     云盘兑换处理
     :param user: 用户对象
     :param email: 用户提供的邮箱
     :param rewards: 使用的积分【可选】
-    :param message: 消息对象，邮件发送过程较慢，需发送等待提示
+    :param _message: 消息对象，邮件发送过程较慢，需发送等待提示
     :return: 最后兑换结果
     """
     if rewards:
@@ -195,7 +195,7 @@ def cloud_handler(user: Users, email: str, rewards: str, message: GroupMessage |
     user.rewards = user.rewards - rewards
     db.commit()
     logger.info(f"用户{user.uid}尝试兑换{score}云盘积分，使用{rewards}积分")
-    asyncio.create_task(message.reply(content="正在兑换，请稍候..."))
+    # asyncio.create_task(_message.reply(content="正在兑换，请稍候..."))
     response = requests.post("https://cloud.shingyu.cn/api/v3/admin/redeem",
                              json={"id": 0, "num": 1, "time": score, "type": 2},
                              headers={"Cookie": COOKIE})
