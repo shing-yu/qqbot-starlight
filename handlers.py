@@ -90,6 +90,8 @@ def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMess
         case "兑换云盘":
             if len(args) < 1:
                 return "参数不足"
+            if user.role not in ["user", "root"]:
+                return "管理员大人，您权限太高啦！👑✨ 积分兑换是给小伙伴们的福利哦~ (๑•̀ㅂ•́)و✧ 不如去监督他们有没有好好签到吧？😆"
             email = args[0]
             return cloud_handler(user, email, args[1] if len(args) > 1 else None, _message)
         case "op":
