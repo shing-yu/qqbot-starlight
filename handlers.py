@@ -1,7 +1,6 @@
 from common import logger, statics, assets, send_code, COOKIE, MODE
 from database import get_session, Users, CheckIn
 from botpy.message import GroupMessage, C2CMessage
-from time import sleep
 import asyncio
 import requests
 import random
@@ -9,7 +8,7 @@ import random
 db = get_session()
 
 
-def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMessage, prefix: str = "\n") -> str:
+async def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMessage, prefix: str = "\n") -> str:
     """
     指令类消息处理器
     :param openid: 从QQ消息中获取的用户openid
@@ -61,19 +60,19 @@ def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMess
             db.commit()
             return "签到成功！🎉 你已收获 10积分！💰 再攒一点，就可以召唤神秘力量了哦~(✧◡✧)✨"
         case "摸鱼":
-            asyncio.create_task(_message.reply(content="你摸到了...🐟"))
             row = db.query(CheckIn).filter_by(uid=user.uid).first()
             if row is None:
                 return "✨ 签到完成后才能解锁幸运抽奖，快去完成签到，再来摸鱼吧！🎉(•̀ᴗ•́)"
             elif row.fished:
                 return "🐟 看来你已经得到了今天的好运，明天再来碰碰运气吧！💫( ｡•̀ᴗ•́｡)"
+            await _message.reply(content="🐟 你摸到了...")
             prizes = [0, 99, 50, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20]
             probabilities = [13.5, 0.81, 1.62, 23, 26, 27, 20, 42, 22, 19, 16, 12, 7, 7, 7, 7, 7, 7, 6]
             prize = random.choices(prizes, probabilities)[0]
             user.rewards += prize
             row.fished = True
             db.commit()
-            sleep(2)
+            await asyncio.sleep(2)
             if prize == 0:
                 return prefix + assets["fishing"]["empty"]
             elif prize == 99:

@@ -13,7 +13,7 @@ class MyClient(botpy.Client):
         content = message.content[1:] if message.content.startswith(" ") else message.content
         logger.info(f"{message.group_openid}||{message.author.member_openid}||{content}")
         if content.startswith("/"):
-            result = commands_handler(message.author.member_openid, content, message)
+            result = await commands_handler(message.author.member_openid, content, message)
             await message.reply(content=result)
         else:
             result = static_handler(content)
@@ -25,7 +25,7 @@ class MyClient(botpy.Client):
         content = message.content[1:] if message.content.startswith(" ") else message.content
         logger.info(f"C2C||{message.author.user_openid}||{content}")
         if content.startswith("/"):
-            result = commands_handler(message.author.user_openid, content, message, prefix="")
+            result = await commands_handler(message.author.user_openid, content, message, prefix="")
             await message.reply(content=result)
         else:
             result = static_handler(content, prefix="")
