@@ -1,8 +1,10 @@
-from common import logger, statics, send_code, COOKIE, MODE
+from common import logger, statics, assets, send_code, COOKIE, MODE
 from database import get_session, Users, CheckIn
 from botpy.message import GroupMessage, C2CMessage
+from time import sleep
 import asyncio
 import requests
+import random
 
 db = get_session()
 
@@ -45,6 +47,7 @@ def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMess
             return (f"{prefix}📢 指令帮助来啦！ 🌟(๑•̀ㅂ•́)و✧\n"
                     "🔁 /echo <内容> \n让机器人变成你的回声精灵！✨ 你说啥，我就说啥！🎤( •̀ ω •́ )✧\n"
                     "📅 /签到 \n每日签到，领取积分！🎁 一天不签到，心情都不好~(´；ω；`)💔\n"
+                    "🐟 /摸鱼 \n随机抽取积分奖励，看看今天的运气如何？🍀✨ 快来摸一摸，大奖等着你哦！(￣▽￣)ノ\n"
                     "📝 /一言 \n随机获取一句富有哲理或有趣的句子！📜✨ 让智慧点亮你的一天！(๑•̀ㅂ•́)و✧\n"
                     "🎭 /设置昵称 <昵称> \n给自己取个响亮的名字吧！💡 你的新身份即将诞生~ (≧▽≦)🎉\n"
                     "📖 /我的 \n查看你的个人信息、积分等等小秘密~ 📜✨ 一切尽在掌握！(๑>◡<๑)🔍\n"
@@ -57,6 +60,33 @@ def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMess
             db.add(CheckIn(uid=user.uid))
             db.commit()
             return "签到成功！🎉 你已收获 10积分！💰 再攒一点，就可以召唤神秘力量了哦~(✧◡✧)✨"
+        case "摸鱼":
+            row = db.query(CheckIn).filter_by(uid=user.uid).first()
+            if row is None:
+                return "✨ 签到完成后才能解锁幸运抽奖，快去完成签到，再来摸鱼吧！🎉(•̀ᴗ•́)"
+            elif row.fished:
+                return "🐟 看来你已经得到了今天的好运，明天再来碰碰运气吧！💫( ｡•̀ᴗ•́｡)"
+            asyncio.create_task(_message.reply(content="你摸到了...🐟"))
+            prizes = [0, 99, 50, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20]
+            probabilities = [13.5, 0.81, 1.62, 23, 26, 27, 20, 42, 22, 19, 16, 12, 7, 7, 7, 7, 7, 7, 6]
+            prize = random.choices(prizes, probabilities)[0]
+            user.rewards += prize
+            row.fished = True
+            db.commit()
+            sleep(2)
+            if prize == 0:
+                return prefix + assets["fishing"]["empty"]
+            elif prize == 99:
+                return prefix + assets["fishing"]["ultra"]
+            elif prize == 50:
+                return prefix + assets["fishing"]["big"]
+            elif prize == 20:
+                return prefix + assets["fishing"]["small"]
+            else:
+                res = random.choice(assets["fishing"]["normal"])
+                return prefix + res.replace("{{prize}}", str(prize))
+        case "摸鱼概率":
+            return prefix + assets["fishing"]["probabilities"]
         case "一言":
             try:
                 hitokoto, from_ = get_hitokoto()
@@ -86,7 +116,8 @@ def commands_handler(openid: str, command: str, _message: GroupMessage | C2CMess
             return text
         case "帮助2":
             return (f"{prefix}更多帮助来啦！ 🌟(๑•̀ㅂ•́)و✧\n"
-                    "/兑换云盘 <邮箱> [机器人积分数] \n使用积分兑换星隅云盘积分，比例1:5，兑换码将发送至邮箱~📧✨\n（至少需要100积分）\n")
+                    "/兑换云盘 <邮箱> [机器人积分数] \n使用积分兑换星隅云盘积分，比例1:5，兑换码将发送至邮箱~📧✨\n（至少需要100积分）\n"
+                    "/摸鱼概率 \n查看摸鱼奖励的概率分布~🎣✨ 今天的大奖会不会属于你呢？(￣▽￣)ノ\n")
         case "兑换云盘":
             if len(args) < 1:
                 return "参数不足"

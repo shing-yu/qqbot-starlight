@@ -36,6 +36,13 @@ try:
 except FileNotFoundError:
     statics = {}
 
+try:
+    with open("assets/assets.toml", "r", encoding="utf-8") as f:
+        # 读取回复资源
+        assets = toml.loads(f.read())
+except FileNotFoundError:
+    raise FileNotFoundError("assets.toml 不存在")
+
 
 smtp_host = os.getenv("SMTP_HOST")
 smtp_port = int(os.getenv("SMTP_PORT"))

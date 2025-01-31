@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import Column, Integer, String, Boolean, create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from apscheduler.schedulers.background import BackgroundScheduler
 from common import logger
@@ -18,6 +18,7 @@ class Users(Base):
 class CheckIn(Base):
     __tablename__ = "checkin"
     uid: Column = Column(Integer, primary_key=True, nullable=False)
+    fished: Boolean = Column(Boolean, default=False)
 
 
 engine = create_engine("sqlite:///data.db", echo=False, isolation_level="READ UNCOMMITTED")

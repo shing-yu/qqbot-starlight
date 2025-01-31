@@ -4,3 +4,4 @@
 .env
 *.db
 static.toml
+test.py
