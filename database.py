@@ -8,17 +8,17 @@ Base = declarative_base()
 
 class Users(Base):
     __tablename__ = "users"
-    uid: Column = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    openid: Column = Column(String(100), unique=True, nullable=False)
-    nickname: Column = Column(String(100))
-    role: Column = Column(String(100), default="user")
-    rewards: Column = Column(Integer, default=0)
+    uid = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    openid = Column(String(100), unique=True, nullable=False)
+    nickname = Column(String(100))
+    role = Column(String(100), default="user")
+    rewards = Column(Integer, default=0)
 
 
 class CheckIn(Base):
     __tablename__ = "checkin"
-    uid: Column = Column(Integer, primary_key=True, nullable=False)
-    fished: Boolean = Column(Boolean, default=False)
+    uid = Column(Integer, primary_key=True, nullable=False)
+    fished = Column(Boolean, default=False)
 
 
 engine = create_engine("sqlite:///data.db", echo=False, isolation_level="READ UNCOMMITTED")

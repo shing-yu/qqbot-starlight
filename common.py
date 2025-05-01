@@ -3,31 +3,18 @@ from botpy import logging
 import tomli as toml
 from dotenv import load_dotenv
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr
+import hmac
+import hashlib
+import base64
+import secrets
 
 load_dotenv()
 MODE = os.getenv("MODE")
 ID = os.getenv("ID")
 SECRET = os.getenv("SECRET")
-COOKIE = os.getenv("COOKIE")
-CODE_URL = os.getenv("CODE_URL")
+CODE_SECRET = os.getenv("CODE_SECRET")
 
 logger = logging.get_logger()
-
-
-def safe_wrapper(func):
-    def wrapper(*args, **kwargs):
-        try:
-            func(*args, **kwargs)
-            return True
-        except Exception as e:
-            logger.exception(e)
-            return False
-    return wrapper
-
 
 try:
     with open("static.toml", "r", encoding="utf-8") as f:
@@ -44,32 +31,29 @@ except FileNotFoundError:
     raise FileNotFoundError("assets.toml 不存在")
 
 
-smtp_host = os.getenv("SMTP_HOST")
-smtp_port = int(os.getenv("SMTP_PORT"))
-smtp_user = os.getenv("SMTP_USER")
-smtp_name = os.getenv("SMTP_NAME")
-smtp_pass = os.getenv("SMTP_PASS")
+def generate_code(identifier: int, number: int):
+    secret_key = CODE_SECRET
+    # 校验输入
+    if identifier not in (0, 1):
+        raise ValueError("类型必须是0或1")
+    if not (0 <= number <= 999999):
+        raise ValueError("额度必须在0-999999范围内")
 
-with open("template.html", "r", encoding="utf-8") as f:
-    template = f.read()
+    # 转换为字母标识
+    type_char = 'A' if identifier == 0 else 'B'
 
+    # 生成6位数字字符串
+    data_str = f"{number:06d}"
 
-@safe_wrapper
-def send_code(email, subject, code, name, score, rewards):
-    msg = MIMEMultipart()
-    msg["From"] = formataddr((smtp_name, smtp_user))
-    msg["To"] = email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(template.replace("{{code}}", code)
-                        .replace("{{name}}", name)
-                        .replace("{{score}}", score)
-                        .replace("{{rewards}}", rewards)
-                        .replace("{{siteTitle}}", smtp_name)
-                        .replace("{{activationUrl}}", CODE_URL),
-                        "html"))
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, email, msg.as_string())
-        logger.info(f"兑换码已发送至{email}")
-    return True
+    # 生成8位随机盐
+    salt = secrets.token_hex(4).upper()
+
+    # 构造签名数据
+    raw_data = f"{type_char}{data_str}{salt}"
+    digest = hmac.new(secret_key.encode(), raw_data.encode(), hashlib.sha256).digest()
+
+    # 生成校验码（Base64去符号处理）
+    checksum = base64.b64encode(digest).decode()[:10]
+    checksum = checksum.replace('+', 'X').replace('/', 'Y').upper()
+
+    return f"{type_char}{data_str}{salt}{checksum}"
