@@ -43,7 +43,6 @@ async def commands_handler(openid: str, command: str, _message: GroupMessage | C
             return "pong"
         case "help" | "帮助":
             return (f"{prefix}📢 指令帮助来啦！ 🌟(๑•̀ㅂ•́)و✧\n"
-                    "🔁 /echo <内容> \n让机器人变成你的回声精灵！✨ 你说啥，我就说啥！🎤( •̀ ω •́ )✧\n"
                     "📅 /签到 \n每日签到，领取积分！🎁 一天不签到，心情都不好~(´；ω；`)💔\n"
                     "🐟 /摸鱼 \n随机抽取积分奖励，看看今天的运气如何？🍀✨ 快来摸一摸，大奖等着你哦！(￣▽￣)ノ\n"
                     "📝 /一言 \n随机获取一句富有哲理或有趣的句子！📜✨ 让智慧点亮你的一天！(๑•̀ㅂ•́)و✧\n"
