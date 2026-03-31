@@ -104,7 +104,7 @@ async def commands_handler(openid: str, command: str, _message: GroupMessage | C
             return (f"{prefix}UID: {user.uid:08d}\n"
                     f"昵称: {user.nickname}\n"
                     f"积分: {user.rewards}\n"
-                    f"角色: {user.role}"
+                    f"角色: {user.role}\n"
                     f"我就知道你会来看的，愚人节快乐！（+20积分）\n🎉(๑>◡<๑)👻")
         case "排行榜":
             rows = db.query(Users).filter(Users.role == 'user').order_by(Users.rewards.desc()).limit(10).all()
