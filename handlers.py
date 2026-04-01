@@ -55,10 +55,10 @@ async def commands_handler(openid: str, command: str, _message: GroupMessage | C
             row = db.query(CheckIn).filter_by(uid=user.uid).first()
             if row is not None:
                 return "今日已经签到过啦！🌸 别贪心哦，明天再来吧~✨ (*￣▽￣)ノ💖"
-            user.rewards += 20
+            user.rewards += 10
             db.add(CheckIn(uid=user.uid))
             db.commit()
-            return "签到成功！🎉 你已收获 10,000,000积分！💰 再攒一点，就可以召唤神秘力量了哦~(✧◡✧)✨（？？？）"
+            return "签到成功！🎉 你已收获 10积分！💰 再攒一点，就可以召唤神秘力量了哦~(✧◡✧)✨"
         case "摸鱼":
             row = db.query(CheckIn).filter_by(uid=user.uid).first()
             if row is None:
@@ -104,8 +104,7 @@ async def commands_handler(openid: str, command: str, _message: GroupMessage | C
             return (f"{prefix}UID: {user.uid:08d}\n"
                     f"昵称: {user.nickname}\n"
                     f"积分: {user.rewards}\n"
-                    f"角色: {user.role}\n"
-                    f"我就知道你会来看的，愚人节快乐！（+20积分）\n🎉(๑>◡<๑)👻")
+                    f"角色: {user.role}")
         case "排行榜":
             rows = db.query(Users).filter(Users.role == 'user').order_by(Users.rewards.desc()).limit(10).all()
             text = f"{prefix}🏆 积分排行榜 🌟(๑•̀ㅂ•́)و✧\n"
