@@ -26,14 +26,15 @@ async def commands_handler(openid: str, command: str, _message: GroupMessage | C
 
     row = db.query(Users).filter_by(openid=openid).first()
 
-    if MODE == "DEBUG" and row.role != "root":
-        return "当前正在进行维护测试，请稍后再试~"
     if row is None:
         logger.info(f"未查询到用户：{openid[:4]}")
         db.add(Users(openid=openid))
         db.commit()
         row = db.query(Users).filter_by(openid=openid).first()
         logger.info(f"已自动注册用户：{openid[:4]}")
+
+    if MODE == "DEBUG" and row.role != "root":
+        return "当前正在进行维护测试，请稍后再试~"
 
     user = row
 

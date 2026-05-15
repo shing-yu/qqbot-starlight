@@ -1,4 +1,4 @@
-qq-botpy
+git+https://github.com/StarEdge-Studio/qq-botpy.git
 python-dotenv
 sqlalchemy
 apscheduler
