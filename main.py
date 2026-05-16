@@ -26,7 +26,7 @@ async def on_group_message_create(message: GroupMessage):
     content = message.content.lstrip(" ")
     logger.info(f"{message.group_openid}||{message.author.member_openid}||{content}")
     # await message.reply(content="\n请私聊使用机器人功能哦~", msg_seq=100)
-    result = await commands_handler(message.author.member_openid, content, message, prefix="")
+    result = await commands_handler(message.author.member_openid, content, message)
     if result:
         await message.reply(content=result, msg_seq=100, at_user=True)
 
